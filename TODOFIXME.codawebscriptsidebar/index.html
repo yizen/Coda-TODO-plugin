@@ -1,0 +1,354 @@
+<html>
+<!------------------------------------------------------------------->
+<!--  This is a simple TODO and FIXME sidebar for CODA             -->
+<!--  that parses text documents and update a list to a sidebar.   -->
+<!--  TODO items may be clicked to access the line in the editor   -->
+<!------------------------------------------------------------------->
+<head>
+  <title>TODO and FIXME parser</title>
+
+  <meta charset="UTF-8">
+
+  <meta author="Olivier Grenet, ogrenet@gmail.com">
+  <meta summary="A Coda Sidebar that parses TODO, FIXME and other tags and display them in a sidebar">
+  <!--
+    //OPTIMIZE: Sample optimize comment
+    //TODO: Sample TODO comment
+  -->
+  <meta licence="MIT">
+
+  <style type="text/css" media="screen">
+    body {
+      padding: 6 !important;
+    }
+    
+    svg {
+      margin-top: 2;
+    }
+    
+    .todo-type {
+      font-family: "Lucida Console", Monaco, monospace;;
+      font-size: 9;
+    }
+    
+    ul {
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font-size: 12;
+      color: #242424;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      padding-left: 1.2;
+    }
+    
+    li {
+      margin: 0;
+      padding: 3;
+      display: flex;
+    }
+    
+    li > svg {
+      min-width: 18
+    }
+    
+    li:hover {
+      cursor: pointer;
+    }
+    
+    li > * {
+      display: inline-flex;
+    }
+    
+    span {
+      margin-left: 3;
+      padding-left: 4;
+    }
+    
+    .line-number {
+      color: #888;
+      font-family: "Lucida Console", Monaco, monospace;
+      font-size: 9;
+      margin-top: 1;
+      padding: 0 5;
+    }
+    
+    .page-center-container {
+      height: 100%;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  </style>
+
+  <script type="text/javascript">
+    //TODO: another sample TODO comment
+    var xmlns = "http://www.w3.org/2000/svg",
+      xlinkns = "http://www.w3.org/1999/xlink";
+    var messageChecks = {
+      note: {
+        regex: /[\/\/][\/\*]\s*NOTE\s*(?:\(([^:]*)\))*\s*:?\s*(.*)/i,
+        label: "NOTE",
+        color: "#f1c40f",
+        text: "N"
+      },
+      optimize: {
+        regex: /[\/\/][\/\*]\s*OPTIMIZE\s*(?:\(([^:]*)\))*\s*:?\s*(.*)/i,
+        label: "OPTIMIZE",
+        color: "#3498db",
+        text: "O"
+      },
+      todo: {
+        regex: /[\/\/][\/\*]\s*TODO\s*(?:\(([^:]*)\))*\s*:?\s*(.*)/i,
+        label: "TODO",
+        color: "#16a085",
+        text: "T"
+      },
+      hack: {
+        regex: /[\/\/][\/\*]\s*HACK\s*(?:\(([^:]*)\))*\s*:?\s*(.*)/i,
+        label: "HACK",
+        color: "#8e44ad",
+        text: "H"
+      },
+      xxx: {
+        regex: /[\/\/][\/\*]\s*XXX\s*(?:\(([^:]*)\))*\s*:?\s*(.*)/i,
+        label: "XXX",
+        color: "#2c3e50",
+        text: "X"
+      },
+      fixme: {
+        regex: /[\/\/][\/\*]\s*FIXME\s*(?:\(([^:]*)\))*\s*:?\s*(.*)/i,
+        label: "FIXME",
+        color: "#c0392b",
+        text: "F"
+      },
+      bug: {
+        regex: /[\/\/][\/\*]\s*BUG\s*(?:\(([^:]*)\))*\s*:?\s*(.*)/i,
+        label: "BUG",
+        color: "#d35400",
+        text: "B"
+      }
+    };
+    //FIXME: Currently the plugin is invoked at load time - it doesn't update when text is edited, and todos removed/added
+    window.onload = function() {
+      textViewDidFocus = function(view) {
+        main();
+      }
+    }
+    /** 
+     * Get the content of the text editor, and returns an array splitted by line.
+     * If the vu is not a content view, will return null
+     *
+     * @return  {Array} The content, splitted by lines or null
+     */
+    function getStringArray() {
+      var content = window.CodaTextView.string();
+      //OPTIMIZE: There should be a better way to test if the view is a text document. 
+      if (content) {
+        return content.split("\n")
+      } else {
+        return null;
+      }
+    }
+    
+    /**
+     * Takes a line of a file and the line number, and returns an array of all of
+     * the messages found in that line. Can return multiple messages per line, for
+     * example, if a message was annotated with more than one type. EG: FIXME TODO
+     *
+     * Each message in the array will have a label, a line_number, a colorer, and a
+     * message. Will also include an author property if one is found on the
+     * message.
+     *
+     * @param   {String} lineString The
+     * @param   {Number} lineNumber
+     *
+     * @return  {Array}
+     */
+    function retrieveMessagesFromLine(lineString, lineNumber) {
+      var messageFormat = {
+          author: null,
+          message: null,
+          label: null,
+          colorer: null,
+          line_number: lineNumber
+        },
+        messages = [];
+      Object.keys(messageChecks).forEach(function(checkName) {
+        var matchResults = lineString.match(messageChecks[checkName].regex),
+          checker = messageChecks[checkName],
+          thisMessage;
+        if (matchResults && matchResults.length) {
+          thisMessage = JSON.parse(JSON.stringify(messageFormat)); // Clone the above structure.
+          thisMessage.label = checker.label;
+          thisMessage.color = checker.color;
+          thisMessage.text = checker.text;
+          if (matchResults[1] && matchResults[1].length) {
+            thisMessage.author = matchResults[1].trim();
+          }
+          if (matchResults[2] && matchResults[2].length) {
+            thisMessage.message = matchResults[2].trim();
+          }
+        }
+        if (thisMessage) messages.push(thisMessage);
+      });
+      return messages;
+    }
+    
+    /**
+     * Takes a line number and returns a padded string matching the total number of
+     * characters in totalLinesNumber. EG: A lineNumber of 12 and a
+     * totalLinesNumber of 1323 will return the string '  12'.
+     *
+     * @param   {Number} lineNumber
+     * @param   {Number} totalLinesNumber
+     *
+     * @return  {String}
+     */
+    function getPaddedLineNumber(lineNumber, totalLinesNumber) {
+      lineNumber++;
+      var paddedLineNumberString = "" + lineNumber;
+      while (paddedLineNumberString.length < ("" + totalLinesNumber).length) {
+        paddedLineNumberString = "\u00A0" + paddedLineNumberString;
+      }
+      return paddedLineNumberString;
+    }
+    
+    /**
+     * Takes an object representing the messages and other meta-info for the file
+     * and calls off to the formatters for the messages, as well as logs the
+     * formatted result.
+     *
+     * @param     {Object}  messagesInfo
+     * @property  {String}  messagesInfo.path The file path
+     * @property  {Array}   messagesInfo.messages All of the message objects for the file.
+     * @property  {String}  messagesInfo.total_lines Total number of lines in the file.
+     * @param     {Object}  content The DOM node to attach the list
+     */
+    function logMessages(messagesInfo, content) {
+      if (messagesInfo.messages.length) {
+        var ul = document.createElement("ul");
+        
+        messagesInfo.messages.forEach(function(message) {
+          var li = document.createElement("li");
+        
+          var picto = document.createElementNS(xmlns, "svg");
+          picto.style.width = 18;
+          picto.style.height = 16;
+          picto.setAttributeNS(xmlns, "width", "18");
+          picto.setAttributeNS(xmlns, "height", "16");
+        
+          var g = document.createElementNS(xmlns, "g"),
+            use = document.createElementNS(xmlns, "use");
+        
+          use.setAttributeNS(xlinkns, "xlink:href", "#icon");
+          use.setAttributeNS(null, "style", "fill:" + message.color);
+        
+          g.appendChild(use);
+          picto.appendChild(g);
+        
+          var text = document.createElementNS(xmlns, "text");
+          text.setAttribute("class", "todo-type");
+          text.setAttribute("x", "6");
+          text.setAttribute("y", "10");
+          text.setAttribute("fill", "#fff");
+          text.textContent = message.text;
+          picto.appendChild(text);
+        
+          li.appendChild(picto);
+        
+          var lineSpan = document.createElement("span");
+          lineSpan.className = "line-number";
+          var paddedLineNumber = getPaddedLineNumber(message.line_number, messagesInfo.total_lines);
+          lineSpan.appendChild(document.createTextNode(paddedLineNumber));
+          
+          li.appendChild(lineSpan);
+          
+                    
+          var messageSpan = document.createElement("span");
+          messageSpan.className = "message";
+          messageSpan.appendChild(document.createTextNode(message.message));
+
+          li.appendChild(messageSpan);
+
+          
+          li.onclick = function() {
+            window.CodaTextView.goToLineAndColumn(1 + parseInt(message.line_number), 1)
+          };
+        
+          ul.appendChild(li);
+        });
+        content.appendChild(ul);
+      } 
+      /* All done ! : display a congratulation icon */
+       else {
+        
+        var emptyContainer = document.createElement("div");
+        
+        emptyContainer.className = "page-center-container";
+        content.appendChild(emptyContainer);
+        
+        var picto = document.createElementNS(xmlns, "svg");
+        picto.style.width = 150;        
+        picto.style.height = 150;
+        
+        var g = document.createElementNS(xmlns, "g"),
+          use = document.createElementNS(xmlns, "use");
+        use.setAttributeNS(xlinkns, "xlink:href", "#empty-icon");
+        g.appendChild(use);
+        picto.appendChild(g);
+        emptyContainer.appendChild(picto);
+      }
+    }
+    /**
+     * This is the entry point for the panel, that will get all content, have it analyzed, and start
+     * the panel refresh.
+     */
+    function main() {
+      var content = document.getElementById("content");
+      //Clean previous content
+      content.innerHTML = null;
+      var contentLines = getStringArray();
+      fileMessages = {
+        path: null,
+        total_lines: 0,
+        messages: []
+      };
+      for (var currentFileLineNumber in contentLines) {
+        messages = retrieveMessagesFromLine(contentLines[currentFileLineNumber], currentFileLineNumber);
+        messages.forEach(function(message) {
+          fileMessages.messages.push(message);
+        });
+      }
+      fileMessages.total_lines = currentFileLineNumber;
+      logMessages(fileMessages, content);
+    }
+  </script>
+</head>
+
+<body>
+  <!-- Icon template -->
+  <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" viewBox="0 0 18 16" height="0" width="0" style="position: absolute; margin-left: -100%;">
+      <path id = "icon" d="M18,1.33V12a1.33,1.33,0,0,1-1.33,1.33H11.33L9,16,6.67,13.33H1.33A1.33,1.33,0,0,1,0,12V1.33A1.33,1.33,0,0,1,1.33,0H16.67A1.33,1.33,0,0,1,18,1.33Z"/>
+  </svg>
+
+  <!-- Nothing to display template -->
+  <svg xmlns="http://www.w3.org/2000/svg" width="146.91" height="128.62" viewBox="0 0 146.91 128.62" style="position: absolute; margin-left: -100%;">
+
+    <g id="empty-icon">
+      <g>
+        <path d="M125.86,6.22V56a6.22,6.22,0,0,1-6.22,6.22h-17.1v14l-14-14H48.13A6.22,6.22,0,0,1,41.92,56V6.22A6.22,6.22,0,0,1,48.13,0h71.51A6.22,6.22,0,0,1,125.86,6.22Z" transform="translate(-9.28 1)" style="fill: none;stroke: #515171;stroke-linecap: round;stroke-linejoin: round;stroke-width: 2px" />
+        <path d="M83.89,21.79c-4.79-10.57-17.78-5.5-17.08,3.9,0.74,10,14.6,16.8,17.08,20.6,2.55-3.8,16.52-10.8,17.08-20.6C101.51,16.28,89.27,11.26,83.89,21.79Z" transform="translate(-9.28 1)" style="fill: none;stroke: #515171;stroke-linecap: round;stroke-linejoin: round;stroke-width: 2px;fill-rule: evenodd" />
+      </g>
+      <text transform="translate(6.92 104.12)" style="font-size: 14px;fill: #515171;font-family: Helvetica">Congratulations, your
+        <tspan x="12.98" y="16.8">todo list is empty.</tspan>
+      </text>
+    </g>
+  </svg>
+
+  <div id="content"></div>
+
+</body>
+
+</html>
