@@ -5,16 +5,16 @@ A sidebar plugin for the [Coda](https://panic.com/coda/) text editor from Panic 
 
 # Installation
 
-* Automatic install
+## Automatic install
 Download the “TODOFIXME.codawebscriptsidebar” file, and double-click to let Coda install the plugin for you.
 
 ![](http://i.imgur.com/BDjIfTg.png)
 
-* Manual install
+## Manual install
 Download the “TODOFIXME.codawebscriptsidebar” file, and move it to the Coda plugin folder, which is located at 
 ```/Users/{your user}/Library/Application Support/Coda 2/Plug-ins```
 
-* Enabling the sidebar
+## Enabling the sidebar
 Open the first tab of the sidebar, locate the TODO icon, right-click and choose “Add to sidebar dock”.
 
 ![](http://i.imgur.com/qSJdrb9.png) 
