@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>English</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.panic.plugin.TODOFIXMEsidebar</string>
+	<string>gr.olivier.plugin.TODOFIXMEsidebar</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
