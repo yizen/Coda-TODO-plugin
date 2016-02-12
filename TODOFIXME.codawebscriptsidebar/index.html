@@ -130,10 +130,10 @@
         text: "B"
       }
     };
-    // The plugin is invoked every 10 seconds
+    //FIXME: Currently the plugin is invoked at load time - it doesn't update when text is edited, and todos removed/added
     window.onload = function() {
       textViewDidFocus = function(view) {
-	      setTimeout( main(), 10000);
+        main();
       }
     }
     /**
