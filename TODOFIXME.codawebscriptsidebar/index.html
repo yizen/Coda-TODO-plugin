@@ -21,16 +21,16 @@
     body {
       padding: 6 !important;
     }
-    
+
     svg {
       margin-top: 2;
     }
-    
+
     .todo-type {
       font-family: "Lucida Console", Monaco, monospace;;
       font-size: 9;
     }
-    
+
     ul {
       font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
       font-size: 12;
@@ -40,30 +40,30 @@
       padding: 0;
       padding-left: 1.2;
     }
-    
+
     li {
       margin: 0;
       padding: 3;
       display: flex;
     }
-    
+
     li > svg {
       min-width: 18
     }
-    
+
     li:hover {
       cursor: pointer;
     }
-    
+
     li > * {
       display: inline-flex;
     }
-    
+
     span {
       margin-left: 3;
       padding-left: 4;
     }
-    
+
     .line-number {
       color: #888;
       font-family: "Lucida Console", Monaco, monospace;
@@ -71,7 +71,7 @@
       margin-top: 1;
       padding: 0 5;
     }
-    
+
     .page-center-container {
       height: 100%;
       padding: 0;
@@ -88,43 +88,43 @@
       xlinkns = "http://www.w3.org/1999/xlink";
     var messageChecks = {
       note: {
-        regex: /[\/\/][\/\*]\s*NOTE\s*(?:\(([^:]*)\))*\s*:?\s*(.*)/i,
+        regex: /[\/\/][\/\*]\s*\@*NOTE\s*(?:\(([^:]*)\))*\s*:?\s*(.*)/i,
         label: "NOTE",
         color: "#f1c40f",
         text: "N"
       },
       optimize: {
-        regex: /[\/\/][\/\*]\s*OPTIMIZE\s*(?:\(([^:]*)\))*\s*:?\s*(.*)/i,
+        regex: /[\/\/][\/\*]\s*\@*OPTIMIZE\s*(?:\(([^:]*)\))*\s*:?\s*(.*)/i,
         label: "OPTIMIZE",
         color: "#3498db",
         text: "O"
       },
       todo: {
-        regex: /[\/\/][\/\*]\s*TODO\s*(?:\(([^:]*)\))*\s*:?\s*(.*)/i,
+        regex: /[\/\/][\/\*]\s*\@*TODO\s*(?:\(([^:]*)\))*\s*:?\s*(.*)/i,
         label: "TODO",
         color: "#16a085",
         text: "T"
       },
       hack: {
-        regex: /[\/\/][\/\*]\s*HACK\s*(?:\(([^:]*)\))*\s*:?\s*(.*)/i,
+        regex: /[\/\/][\/\*]\s*\@*HACK\s*(?:\(([^:]*)\))*\s*:?\s*(.*)/i,
         label: "HACK",
         color: "#8e44ad",
         text: "H"
       },
       xxx: {
-        regex: /[\/\/][\/\*]\s*XXX\s*(?:\(([^:]*)\))*\s*:?\s*(.*)/i,
+        regex: /[\/\/][\/\*]\s*\@*XXX\s*(?:\(([^:]*)\))*\s*:?\s*(.*)/i,
         label: "XXX",
         color: "#2c3e50",
         text: "X"
       },
       fixme: {
-        regex: /[\/\/][\/\*]\s*FIXME\s*(?:\(([^:]*)\))*\s*:?\s*(.*)/i,
+        regex: /[\/\/][\/\*]\s*\@*FIXME\s*(?:\(([^:]*)\))*\s*:?\s*(.*)/i,
         label: "FIXME",
         color: "#c0392b",
         text: "F"
       },
       bug: {
-        regex: /[\/\/][\/\*]\s*BUG\s*(?:\(([^:]*)\))*\s*:?\s*(.*)/i,
+        regex: /[\/\/][\/\*]\s*\@*BUG\s*(?:\(([^:]*)\))*\s*:?\s*(.*)/i,
         label: "BUG",
         color: "#d35400",
         text: "B"
@@ -136,7 +136,7 @@
         main();
       }
     }
-    /** 
+    /**
      * Get the content of the text editor, and returns an array splitted by line.
      * If the vu is not a content view, will return null
      *
@@ -144,14 +144,14 @@
      */
     function getStringArray() {
       var content = window.CodaTextView.string();
-      //OPTIMIZE: There should be a better way to test if the view is a text document. 
+      //OPTIMIZE: There should be a better way to test if the view is a text document.
       if (content) {
         return content.split("\n")
       } else {
         return null;
       }
     }
-    
+
     /**
      * Takes a line of a file and the line number, and returns an array of all of
      * the messages found in that line. Can return multiple messages per line, for
@@ -195,7 +195,7 @@
       });
       return messages;
     }
-    
+
     /**
      * Takes a line number and returns a padded string matching the total number of
      * characters in totalLinesNumber. EG: A lineNumber of 12 and a
@@ -214,7 +214,7 @@
       }
       return paddedLineNumberString;
     }
-    
+
     /**
      * Takes an object representing the messages and other meta-info for the file
      * and calls off to the formatters for the messages, as well as logs the
@@ -229,25 +229,25 @@
     function logMessages(messagesInfo, content) {
       if (messagesInfo.messages.length) {
         var ul = document.createElement("ul");
-        
+
         messagesInfo.messages.forEach(function(message) {
           var li = document.createElement("li");
-        
+
           var picto = document.createElementNS(xmlns, "svg");
           picto.style.width = 18;
           picto.style.height = 16;
           picto.setAttributeNS(xmlns, "width", "18");
           picto.setAttributeNS(xmlns, "height", "16");
-        
+
           var g = document.createElementNS(xmlns, "g"),
             use = document.createElementNS(xmlns, "use");
-        
+
           use.setAttributeNS(xlinkns, "xlink:href", "#icon");
           use.setAttributeNS(null, "style", "fill:" + message.color);
-        
+
           g.appendChild(use);
           picto.appendChild(g);
-        
+
           var text = document.createElementNS(xmlns, "text");
           text.setAttribute("class", "todo-type");
           text.setAttribute("x", "6");
@@ -255,44 +255,44 @@
           text.setAttribute("fill", "#fff");
           text.textContent = message.text;
           picto.appendChild(text);
-        
+
           li.appendChild(picto);
-        
+
           var lineSpan = document.createElement("span");
           lineSpan.className = "line-number";
           var paddedLineNumber = getPaddedLineNumber(message.line_number, messagesInfo.total_lines);
           lineSpan.appendChild(document.createTextNode(paddedLineNumber));
-          
+
           li.appendChild(lineSpan);
-          
-                    
+
+
           var messageSpan = document.createElement("span");
           messageSpan.className = "message";
           messageSpan.appendChild(document.createTextNode(message.message));
 
           li.appendChild(messageSpan);
 
-          
+
           li.onclick = function() {
             window.CodaTextView.goToLineAndColumn(1 + parseInt(message.line_number), 1)
           };
-        
+
           ul.appendChild(li);
         });
         content.appendChild(ul);
-      } 
+      }
       /* All done ! : display a congratulation icon */
        else {
-        
+
         var emptyContainer = document.createElement("div");
-        
+
         emptyContainer.className = "page-center-container";
         content.appendChild(emptyContainer);
-        
+
         var picto = document.createElementNS(xmlns, "svg");
-        picto.style.width = 150;        
+        picto.style.width = 150;
         picto.style.height = 150;
-        
+
         var g = document.createElementNS(xmlns, "g"),
           use = document.createElementNS(xmlns, "use");
         use.setAttributeNS(xlinkns, "xlink:href", "#empty-icon");
